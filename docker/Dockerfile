@@ -2,11 +2,11 @@ FROM ubuntu:14.04
 MAINTAINER Yu-Chen Chang <edcyc.tw@gmail.com>
 
 # Install curl
+RUN apt-get update
 RUN apt-get install -y curl
 
 # For python script
 # Install python
-RUN apt-get update
 RUN apt-get -y install python
 # Download pip
 RUN apt-get -y install python-pip
