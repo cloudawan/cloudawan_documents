@@ -15,7 +15,7 @@ RUN pip install httplib2
 # Install python yaml
 RUN pip install pyyaml
 # Install mkdocs
-pip install mkdocs
+RUN pip install mkdocs
 
 # Bundle app source
 COPY . /src
