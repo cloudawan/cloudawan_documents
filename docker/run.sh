@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cd /src/cloudawan/
-mkdocs serve
+mkdocs serve -a 0.0.0.0:8000
 
 while :
 do
