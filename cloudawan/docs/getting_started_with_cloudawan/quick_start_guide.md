@@ -1,4 +1,4 @@
-# Installing a single host deployment - a Quick Start Guide
+# Installing a single host deployment
 
 ## Purpose of the document
 
@@ -11,7 +11,7 @@ If you would like a detailed walkthrough with instructions for installing cluste
 1.	Oracle virtual Box (Linux/Windows/Mac)
 2.	Spared 4 CPU core and 8 GB memory
 
-## Install Pre-built VirtualBox Template
+## Install the pre-built VirtualBox Template
 
 ### Step 1 Download
 
@@ -25,7 +25,7 @@ Import the template into the Virtual Box.
 2. Select the ova image that you downloaded.
 3. Click Next button and then Import.
 
-### Step 3 Configure IP
+### Step 3 Configure ip
 
 You could use either dhcp or static ip for this instance.
 
@@ -41,7 +41,7 @@ You could use either dhcp or static ip for this instance.
 2. Enter url ​https://{eth0 ip}:30003 on the browser with admin/password as usernmae/password
 3. Go to Dashboard -> HealthCheck to see wether all components are running. Each component is independent and has different time cost to initialize.
 
-### Step 5 Configure Host Credentials
+### Step 5 Configure host credentials
 
 Host credentials are required to access the host to issue commands, such as accessing the container shell on GUI, deleting the unused Docker images on host, and ...etc. Due to Docker command requirements, this user used in the credentials needs to have the root priviledge or the equivalent priviledge group.
 

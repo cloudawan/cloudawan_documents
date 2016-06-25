@@ -2,12 +2,16 @@ site_name: CloudAwan Documents
 
 pages:
 - Home: 'index.md'
-- Getting Started With CloudAwan:
-    - 'Quick Start Guide': 'getting-started-with-cloudawan/quick-start-guide.md'
-    - 'Terminologies': 'getting-started-with-cloudawan/terminologies.md'
-    - 'Architecture': 'getting-started-with-cloudawan/architecture.md'
+- Getting Started:
+    - 'Quick Start Guide': 'getting_started_with_cloudawan/quick_start_guide.md'
+    - 'Terminologies': 'getting_started_with_cloudawan/terminologies.md'
+- Architecture:
+    - 'Overview': 'architecture/overview.md'
+    - 'Infrastructure': 'architecture/infrastructure.md'
+    - 'Deployment Concept': 'architecture/deployment_concept.md'
+    - 'Management Concept': 'architecture/management_concept.md'
 - About:
     - 'License': 'about/license.md'
-    - 'Release Notes': 'about/release-notes.md'
+    - 'Release Notes': 'about/release_notes.md'
 
 theme: readthedocs
