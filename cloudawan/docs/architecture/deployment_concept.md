@@ -111,6 +111,26 @@ The platform provides **dynamic binding between instances and volumes**. That is
 
 ![Stateful data](/images/architecture/third_party_service_persistent_storage_dynamic_binding.png)
 
+# Instance
+
+For the running instances, the smallest deployable unit is the Kubernetes pod. The size of the application or the third-party service is the amount of Kubernetes pods controlled by one or more Kubernetes replication controllers. A pod may contains one or more docker containers. When deploying a pod to host, all containers belonging to that pod are deployed to the same host and share the same IP address and port space. They could access each other via localhost and communicate with each other by the standard inter-process communications.
+
+## Location affinity
+
+For geographical-aware network topology, location affinity could limit the region and the zone to deploy the instances. If not selected, the target instances could be deployed to any host. If the specifc region is selected, the target instances are deployed to any host in the zones belonging to the region. If the specifc region and zone is  selected, the target instances are deployed to any host in the zone in the region.
+
+![Stateful data](/images/architecture/application_instance_location_affinity.png)
+
+## Environment variable
+
+Environment variable is designed to pass parameters to initialize the instances. The values are saved in the replication controller template. Therefore, all launched instances from the same replication controller template share the same values when deploying the application or the third-party servie, scaling out for more running instances, and auto-repairing to replace the dead instance. 
+
+# Service
+
+The service is the Kubernetes service provideing an access entry to the application or the third-party service. Each services has one or more ports routing, either round-robin or sesssion affinity, to the instances of the application or the third-party service. Although the service has cluster ip, that is the internal virtual ip, it is suggested to use domain name to access the service. The domain name is in the format **service.namespace.svc.cluster.local** where service is the service name, namespace is the namespace where the service is in, and cluster.local is the cluster name configured during install. The node port could be configured for the service to be accessed from outside of the Kubernetes hosts.
+
+![Stateful data](/images/architecture/service.png)
+
 # Blue-green deployment
 
 Generally, the blue-green deployment is a method for releasing the product in a predictable manner with an goal of reducing any downtime related to the release. It’s a quick switch to route the traffic from the current serving environment to another environment ready to release and also quickly rollback to the previous working environment if something goes wrong in the new environment. 
