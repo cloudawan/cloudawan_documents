@@ -1,12 +1,10 @@
 # Installing a single host deployment
 
-## Purpose of the document
-
 This document is intended to give you a step by step guide to quick setup a single host with all infrastructures for quick glimpse. However, some advanced features are restricted with this deployment.
 
 If you would like a detailed walkthrough with instructions for installing clusters, deploying on public cloud, or using hybrid cloud. Please contact us: info@cloudawan.com
 
-## Prerequirements
+## Prerequirements(Single Host)
 
 1. Oracle virtual Box (Linux/Windows/Mac)
 2. Spared 4 CPU core and 8 GB memory
@@ -59,11 +57,9 @@ Configure the Glusterfs server to manage volumes on GUI. Due to Glusterfs comman
 
 # Deploying the whole clusters
 
-## Purpose of the document
-
 This document is intended to give you a step by step guide to deploy one cluster with all infrastructures within the single data center.
 
-## Prerequirements
+## Prerequirements(Cluster)
 
 1. 3 Ubuntu 14.04 instances with at least 2 CPU and 8 GB memory for Kubernetes Master/Node hosts
 2. 2 Ubuntu 14.04 instances with at least 1 CPU and 2 GB memory for Glusterfs servers
