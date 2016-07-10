@@ -62,7 +62,7 @@ This document is intended to give you a step by step guide to deploy one cluster
 ## Prerequirements(Cluster)
 
 1. 3 Ubuntu 14.04 instances with at least 2 CPU and 8 GB memory for Kubernetes Master/Node hosts
-2. 2 Ubuntu 14.04 instances with at least 1 CPU and 2 GB memory for Glusterfs servers
+2. 2 Ubuntu 14.04 instances with at least 1 CPU and 2 GB memory for Glusterfs servers and HAproxy servers
 3. The Ubuntu instances could be on AWS, GCE, Virtual Machine environment, bare metal environment and ...etc.
 
 ## Install with the ansible
@@ -83,8 +83,10 @@ This document is intended to give you a step by step guide to deploy one cluster
 5. Configure the host used to issue commands to the Glusterfs cluster in the section [glusterfs_configuring]. Pick up one of the 2 hosts in the section [glusterfs_host] and put here.
 6. Select the glusterfs seed server for joining in the section [glusterfs:vars]. Change the ip of the parameter seed_host to any one of glusterfs hosts in the section [glusterfs_host].
 7. Select the glusterfs hosts to store the disk volumes of the private-registry data and the cloudawan data in the section [glusterfs:vars]. Change the ip of the parameter software_replica_host_1 and software_replica_host_2 to any 2 of glusterfs hosts in the section [glusterfs_host].
-8. (Optional) Change the flannel virtual network (flannel_subnet and flannel_subnet_mask_bit) used only internal on the Kubernetes hosts in the section [master_node:vars]. The docker containers will use this network to communicate.
-9. (Optional) Change the Kubernetes service network (service_cluster_ip_range) used only insides the docker containers to access Kubernetes service and kubernetes internal dns (service_cluster_dns_ip) used only insides the docker containers for domain name in the section [master_node:vars]. The service_cluster_dns_ip must reside in the service_cluster_ip_range.
+8. Configure the ip for 2 HAproxy servers in the section [haproxy_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
+9. Configure the floating IP (haproxy_floating_ip) to an IP unused in the same physical subnet. The floating ip is in the hot-standby mode. If the active HAproxy server is down, the other will take over this floating ip immediately. This ip should not be used by any other machine in the subnet.
+10. (Optional) Change the flannel virtual network (flannel_subnet and flannel_subnet_mask_bit) used only internal on the Kubernetes hosts in the section [master_node:vars]. The docker containers will use this network to communicate.
+11. (Optional) Change the Kubernetes service network (service_cluster_ip_range) used only insides the docker containers to access Kubernetes service and kubernetes internal dns (service_cluster_dns_ip) used only insides the docker containers for domain name in the section [master_node:vars]. The service_cluster_dns_ip must reside in the service_cluster_ip_range.
 10. (Optional) Change the data center label (node_label) in the section [master_node:vars]. The label could be used to do geographical topology awareness when deploying new instances. One region contains many zones and one zones contains many hosts. The network delay between two zones in the same region should be small enough (1~2 ms) to ignore.
 
 ### Step 3 Run script
