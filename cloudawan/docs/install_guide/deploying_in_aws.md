@@ -10,7 +10,7 @@ This document is intended to give you a step by step guide to deploy one cluster
 4. One AWS EIP for outside world to access.
 5. The security group used for the Ubuntu instances. This security group rule should allows all inbound/outbound traffic to/from the AWS VPC. Everything on the AWS VPC in prerequirement 3 is kept inside and can't be accessed from Internet so the network security should be alleviated.
 6. Allow the inbound ports used by the running applications to be accessible from the Internet. The port 443 is used by the CloudAwan GUI and needs to be allowed. (For applications run on Kubernetes, the default useable ports for the AWS EIP are ranged from 30000 to 32767.)
-7. Go to AWS IAM to create a user credential with privilege policy AmazonAPIGatewayInvokeFullAccess. The credential is used for HAproxy Master/Master to failover where the EIP and the floating private ip are associated/disassociated dynamically. For more fine-grained, the customized policy could be created with four allowed operations: aws ec2 disassociate-address, aws ec2 associate-address, aws ec2 unassign-private-ip-addresses, and aws ec2 assign-private-ip-addresses.
+7. Go to AWS IAM to create a user credential with privilege policy AmazonEC2FullAccess. The credential is used for HAproxy Master/Master to failover where the EIP and the floating private ip are associated/disassociated dynamically. For more fine-grained, the customized policy could be created with four allowed operations: aws ec2 disassociate-address, aws ec2 associate-address, aws ec2 unassign-private-ip-addresses, and aws ec2 assign-private-ip-addresses.
 
 ## Install
 
