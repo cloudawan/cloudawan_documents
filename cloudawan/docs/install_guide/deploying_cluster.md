@@ -34,13 +34,12 @@ This document is intended to give you a step by step guide to deploy the initial
 3. Configure the host used to configure cluster level install in the section [master_node_host]. Pick up one of the 3 hosts in the section [master_node_host] and put here.
 4. Configure the ip for 2 Glusterfs servers in the section [glusterfs_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
 5. Configure the host used to issue commands to the Glusterfs cluster in the section [glusterfs_configuring]. Pick up one of the 2 hosts in the section [glusterfs_host] and put here.
-6. Select the glusterfs seed server for joining in the section [glusterfs:vars]. Change the ip of the parameter seed_host to any one of glusterfs hosts in the section [glusterfs_host].
-7. Select the glusterfs hosts to store the disk volumes of the private-registry data and the cloudawan data in the section [glusterfs:vars]. Change the ip of the parameter software_replica_host_1 and software_replica_host_2 to any 2 of glusterfs hosts in the section [glusterfs_host].
-8. Configure the ip for 2 HAproxy servers in the section [haproxy_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
-9. Configure the floating IP (haproxy_floating_ip) to an IP unused in the same physical subnet. The floating ip is in the hot-standby mode. If the active HAproxy server is down, the other will take over this floating ip immediately. This ip should not be used by any other machine in the subnet.
-10. (Optional) Change the flannel virtual network (flannel_subnet and flannel_subnet_mask_bit) used only internal on the Kubernetes hosts in the section [master_node:vars]. The docker containers will use this network to communicate.
-11. (Optional) Change the Kubernetes service network (service_cluster_ip_range) used only insides the docker containers to access Kubernetes service and kubernetes internal dns (service_cluster_dns_ip) used only insides the docker containers for domain name in the section [master_node:vars]. The service_cluster_dns_ip must reside in the service_cluster_ip_range.
-12. (Optional) Change the data center label (node_label) in the section [master_node:vars]. The label could be used to do geographical topology awareness when deploying new instances. One region contains many zones and one zones contains many hosts. The network delay between two zones in the same region should be small enough (1~2 ms) to ignore.
+6. Select the glusterfs hosts to store the disk volumes of the private-registry data and the cloudawan data in the section [glusterfs:vars]. Change the ip of the parameter software_replica_host_1 and software_replica_host_2 to any 2 of glusterfs hosts in the section [glusterfs_host].
+7. Configure the ip for 2 HAproxy servers in the section [haproxy_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
+8. Configure the floating IP (haproxy_floating_ip) to an IP unused in the same physical subnet. The floating ip is in the hot-standby mode. If the active HAproxy server is down, the other will take over this floating ip immediately. This ip should not be used by any other machine in the subnet.
+9. (Optional) Change the flannel virtual network (flannel_subnet and flannel_subnet_mask_bit) used only internal on the Kubernetes hosts in the section [master_node:vars]. The docker containers will use this network to communicate.
+10. (Optional) Change the Kubernetes service network (service_cluster_ip_range) used only insides the docker containers to access Kubernetes service and kubernetes internal dns (service_cluster_dns_ip) used only insides the docker containers for domain name in the section [master_node:vars]. The service_cluster_dns_ip must reside in the service_cluster_ip_range.
+11. (Optional) Change the data center label (node_label) in the section [master_node:vars]. The label could be used to do geographical topology awareness when deploying new instances. One region contains many zones and one zones contains many hosts. The network delay between two zones in the same region should be small enough (1~2 ms) to ignore.
 
 ### Step 3. Run script
 
@@ -58,16 +57,23 @@ master_node_host
 master_node_configuring
 
 [master_node:vars]
+# The virtual network used for containers to communicate
 flannel_subnet=172.16.0.0
 flannel_subnet_mask_bit=16
+# The virtual network used for the Kubernetes services. This should be the subset of flannel_subnet.
 service_cluster_ip_range=172.17.3.0/24
 service_cluster_dns_ip=172.17.3.10
+# This is used to provide location awareness. The difference between region and zone is that the network delay between zones is small enough to ignore while it is not between regions.
 node_label="region=region1,zone=zone1"
 # Restrict the location to deploy
 private_registry_region="region1"
 private_registry_zone="zone1"
 cloudone_all_region="region1"
 cloudone_all_zone="zone1"
+# The token used to access secured kube-apiserver https port 6443
+# Generated by the following command.
+# TOKEN=$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | base64 | tr -d "=+/" | dd bs=32 count=1 2>/dev/null)
+kube_apiserver_access_token="9pIoafGAbaKxdbwuHWZNJqHYS56S0vmh"
 
 # Install infrastructure
 [master_node_host]
@@ -87,13 +93,13 @@ glusterfs_host
 glusterfs_configuring
 
 [glusterfs:vars]
-# The seed host for other hosts to join during initializing. It could be any one of the host
-seed_host=192.168.0.74
-# software_replica_host are the hosts used to hold the volumes used by system programs. They can be picked up from the Glusterfs host list.
-software_replica_host_1=192.168.0.74
-software_replica_host_2=192.168.0.75
+# This is the ip used to connect to Kubernetes master hosts.
+master_host_slb_vip=192.168.0.150
 
 [glusterfs_host]
+# At least two hosts are required due to the HA configuration. 
+# The first host {{ groups['glusterfs_host'][0] }} will be used as the seed host.
+# The first host {{ groups['glusterfs_host'][0] }} and the second host {{ groups['glusterfs_host'][1] }} will hold the volumes for system programs
 192.168.0.74 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
 192.168.0.75 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
 
@@ -109,7 +115,10 @@ haproxy_host
 
 [haproxy:vars]
 # This floating ip is in the hot-standby mode. If the active HAProxy server is down, the other will take over.
+# This is also the ip used to connect to Kubernetes master hosts. That is the role of master_host_slb_vip.
 haproxy_floating_ip=192.168.0.150
+# Domain name suffix. This is used to provide domain name service access to the Kubernetes services of the deployed applications. The access entry will be application_name.service_name.domain_name_suffix:container_port
+domain_name_suffix=cloudawan.com
 
 [haproxy_host]
 192.168.0.74 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
@@ -172,6 +181,11 @@ These parameters are shared by all Kubernetes Master hosts and Kubernetes Node h
         <td>cloudone_all_region</td>
         <td>"region1"</td>
         <td>The region the cloudone, that is the management platform, is limited to hold.</td>
+    </tr>
+	<tr>
+        <td>kube_apiserver_access_token</td>
+        <td>"9pIoafGAbaKxdbwuHWZNJqHYS56S0vmh"</td>
+        <td>It is the secure token used for the Kubernetes Node host to access the Kubernetes Master host with https.</td>
     </tr>
 </table>
 
@@ -241,20 +255,10 @@ These parameters are shared by all Glusterfs hosts.
         <td>Example</td>
         <td>Description</td>
     </tr>
-    <tr>
-        <td>seed_host</td>
-        <td>192.168.0.74</td>
-        <td>The seed server for other hosts to join during initializing. It could be any one of the Glusterfs hosts.</td>
-    </tr>
 	<tr>
-        <td>software_replica_host_1</td>
-        <td>192.168.0.74</td>
-        <td>The private-registry and cloudawan need the persistent storage to save files and data. So two Glusterfs servers are required to hold the volumes for them. It could be any two of the Glusterfs hosts.</td>
-    </tr>
-	<tr>
-        <td>software_replica_host_2</td>
-        <td>192.168.0.75</td>
-        <td>The private-registry and cloudawan need the persistent storage to save files and data. So two Glusterfs servers are required to hold the volumes for them. It could be any two of the Glusterfs hosts.</td>
+        <td>master_host_slb_vip</td>
+        <td>192.168.0.150</td>
+        <td>The virtual IP provided by the SLB to route to the master host. The health check dameon will send the data to the port 4001 of the master_host_slb_vip. If there is no SLB, the master host could be used here but there won't be HA.</td>
     </tr>
 </table>
 
@@ -327,7 +331,12 @@ These parameters are shared by all Glusterfs hosts.
     <tr>
         <td>haproxy_floating_ip</td>
         <td>192.168.0.150</td>
-        <td>This floating IP is in the hot-standby mode. If the active HAProxy server is down, the other will take over.</td>
+        <td>This floating IP is in the hot-standby mode. If the active HAProxy server is down, the other will take over. This is also the ip used to connect to Kubernetes master hosts. The health check dameon will send the data to the port 4001 of the haproxy_floating_ip</td>
+    </tr>
+    <tr>
+        <td>domain_name_suffix</td>
+        <td>cloudawan.com</td>
+        <td>The domain name suffix. This is used to provide domain name service access to the Kubernetes services of the deployed applications. The access entry will be application_name.service_name.domain_name_suffix:container_port</td>
     </tr>
 </table>
 
