@@ -31,15 +31,14 @@ This document is intended to give you a step by step guide to deploy the initial
 
 1. Open the file **hosts_cluster** to modify.
 2. Configure the ip for 3 Kubernetes Master/Node hosts in the section [master_node_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 2 CPU and 8 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
-3. Configure the host used to configure cluster level install in the section [master_node_host]. Pick up one of the 3 hosts in the section [master_node_host] and put here.
-4. Configure the ip for 2 Glusterfs servers in the section [glusterfs_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
-5. Configure the host used to issue commands to the Glusterfs cluster in the section [glusterfs_configuring]. Pick up one of the 2 hosts in the section [glusterfs_host] and put here.
-6. Select the glusterfs hosts to store the disk volumes of the private-registry data and the cloudawan data in the section [glusterfs:vars]. Change the ip of the parameter software_replica_host_1 and software_replica_host_2 to any 2 of glusterfs hosts in the section [glusterfs_host].
-7. Configure the ip for 2 HAproxy servers in the section [haproxy_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
-8. Configure the floating IP (haproxy_floating_ip) to an IP unused in the same physical subnet. The floating ip is in the hot-standby mode. If the active HAproxy server is down, the other will take over this floating ip immediately. This ip should not be used by any other machine in the subnet.
-9. (Optional) Change the flannel virtual network (flannel_subnet and flannel_subnet_mask_bit) used only internal on the Kubernetes hosts in the section [master_node:vars]. The docker containers will use this network to communicate.
-10. (Optional) Change the Kubernetes service network (service_cluster_ip_range) used only insides the docker containers to access Kubernetes service and kubernetes internal dns (service_cluster_dns_ip) used only insides the docker containers for domain name in the section [master_node:vars]. The service_cluster_dns_ip must reside in the service_cluster_ip_range.
-11. (Optional) Change the data center label (node_label) in the section [master_node:vars]. The label could be used to do geographical topology awareness when deploying new instances. One region contains many zones and one zones contains many hosts. The network delay between two zones in the same region should be small enough (1~2 ms) to ignore.
+3. Configure the ip for 2 Glusterfs servers in the section [glusterfs_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
+4. Configure the master host slb vip in the section [glusterfs:vars] to the floating ip of HAProxy(haproxy_floating_ip in section [haproxy:vars]). Hosts will use this floating ip supported by HA to communicate with master host cluster.
+5. Configure the ip for 2 HAproxy servers in the section [haproxy_host]. Change the ip to the physical ip of the Ubuntu 14.04 instance with at least 1 CPU and 2 GB memory and username(ansible_user) and password(both ansible_ssh_pass and ansible_become_pass) to the root user and root password.
+6. Configure the floating IP (haproxy_floating_ip in section [haproxy:vars]) to an IP reserved in the same physical subnet. The floating ip is in the hot-standby mode. If the active HAproxy server is down, the other will take over this floating ip immediately. This ip should not be used by any other machine in the subnet.
+7. Configure the domain name suffix (domain_name_suffix in section [haproxy:vars]) to the suffix of all services exported to Internet. This is used to provide domain name service access to the Kubernetes services of the deployed applications. The access entry will be application_name.service_name.domain_name_suffix:container_port. Also, users should configure the *.domain_name_suffix to send to the floating IP (haproxy_floating_ip in section [haproxy:vars]) in the public domain service providers.
+8. (Optional) Change the flannel virtual network (flannel_subnet and flannel_subnet_mask_bit) used only internal on the Kubernetes hosts in the section [master_node:vars]. The docker containers will use this network to communicate.
+9. (Optional) Change the Kubernetes service network (service_cluster_ip_range) used only insides the docker containers to access Kubernetes service and kubernetes internal dns (service_cluster_dns_ip) used only insides the docker containers for domain name in the section [master_node:vars]. The service_cluster_dns_ip must reside in the service_cluster_ip_range.
+10. (Optional) Change the data center label (node_label) in the section [master_node:vars]. The label could be used to do geographical topology awareness when deploying new instances. One region contains many zones and one zones contains many hosts. The network delay between two zones in the same region should be small enough (1~2 ms) to ignore.
 
 ### Step 3. Run script
 
@@ -54,7 +53,6 @@ The following is the configuration file /cloudawan_install/kubernetes1.2/hosts_c
 # Kubernetes Master role or Node role hosts
 [master_node:children]
 master_node_host
-master_node_configuring
 
 [master_node:vars]
 # The virtual network used for containers to communicate
@@ -70,27 +68,27 @@ private_registry_region="region1"
 private_registry_zone="zone1"
 cloudone_all_region="region1"
 cloudone_all_zone="zone1"
-# The token used to access secured kube-apiserver https port 6443
-# Generated by the following command.
-# TOKEN=$(dd if=/dev/urandom bs=128 count=1 2>/dev/null | base64 | tr -d "=+/" | dd bs=32 count=1 2>/dev/null)
-kube_apiserver_access_token="9pIoafGAbaKxdbwuHWZNJqHYS56S0vmh"
+# Generate certificates for Kubernetes components to use bi-directional SSL to secure the communication.
+# User could use their own CA certificates to sign the generated certificates. 
+# The file path could be relative or absolute. If not indicated, one CA pair will be generated.
+# The generated CA pair should keep safely and will be used when adding new Kubernetes Node hosts.
+certificate_ca_certificate_file_path=""
+certificate_ca_key_file_path=""
+certificate_ca_key_passphrase="password"
+certificate_ca_valid_days=36500
+certificate_server_valid_days=36500
 
 # Install infrastructure
 [master_node_host]
-192.168.0.71 hostname=k8masternodea1 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
-192.168.0.72 hostname=k8masternodea2 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
-192.168.0.73 hostname=k8masternodea3 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
-
-# The machine used to configure software
-[master_node_configuring]
-192.168.0.71 hostname=k8masternodea1 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
+192.168.0.71 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
+192.168.0.72 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
+192.168.0.73 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
 
 
 
 # Glusterfs
 [glusterfs:children]
 glusterfs_host
-glusterfs_configuring
 
 [glusterfs:vars]
 # This is the ip used to connect to Kubernetes master hosts.
@@ -102,10 +100,6 @@ master_host_slb_vip=192.168.0.150
 # The first host {{ groups['glusterfs_host'][0] }} and the second host {{ groups['glusterfs_host'][1] }} will hold the volumes for system programs
 192.168.0.74 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
 192.168.0.75 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password
-
-# The machine used to configure
-[glusterfs_configuring]
-192.168.0.74 ansible_user=username ansible_ssh_pass=password ansible_become_pass=password 
 
 
 
@@ -172,53 +166,46 @@ These parameters are shared by all Kubernetes Master hosts and Kubernetes Node h
         <td>"region1"</td>
         <td>The region the private-registry is limited to hold.</td>
     </tr>
+	<tr>
+        <td>cloudone_all_region</td>
+        <td>"region1"</td>
+        <td>The region the cloudone, that is the management platform, is limited to hold.</td>
+    </tr>
     <tr>
         <td>cloudone_all_zone</td>
         <td>"zone1"</td>
         <td>The zone the cloudone, that is the management platform, is limited to hold.</td>
     </tr>
-    <tr>
-        <td>cloudone_all_region</td>
-        <td>"region1"</td>
-        <td>The region the cloudone, that is the management platform, is limited to hold.</td>
+	<tr>
+        <td>certificate_ca_certificate_file_path</td>
+        <td></td>
+        <td>The file path of the ca certificate used to verify the generated certificates for hosts. The file path could be relative or absolute. If not indicated, one CA pair will be generated.</td>
     </tr>
 	<tr>
-        <td>kube_apiserver_access_token</td>
-        <td>"9pIoafGAbaKxdbwuHWZNJqHYS56S0vmh"</td>
-        <td>It is the secure token used for the Kubernetes Node host to access the Kubernetes Master host with https.</td>
+        <td>certificate_ca_key_file_path</td>
+        <td></td>
+        <td>The file path of the ca key used to sign the generated certificates for hosts. The file path could be relative or absolute. If not indicated, one CA pair will be generated.</td>
+    </tr>
+	<tr>
+        <td>certificate_ca_key_passphrase</td>
+        <td>"password"</td>
+        <td>If the file path for ca is empty. This will be used as the password for the generated self-signed CA.</td>
+    </tr>
+	<tr>
+        <td>certificate_ca_valid_days</td>
+        <td>36500</td>
+        <td>The valid duration for the generated CA.</td>
+    </tr>
+	<tr>
+        <td>certificate_server_valid_days</td>
+        <td>36500</td>
+        <td>The valid duration for the generated certificates.</td>
     </tr>
 </table>
 
 #### Host Variable [master_node_host]
 
 Each host has its own independent variables following the host ip. The hosts here have both Kubernetes Master programs and Node programs so they play two roles. 
-
-<table>
-    <tr>
-        <td>Variable Name</td>
-        <td>Example</td>
-        <td>Description</td>
-    </tr>
-    <tr>
-        <td>ansible_user</td>
-        <td>username</td>
-        <td>The username to login this host. The user must have the root privilege</td>
-    </tr>
-    <tr>
-        <td>ansible_ssh_pass</td>
-        <td>password</td>
-        <td>The password for the ansible_user.</td>
-    </tr>
-    <tr>
-        <td>ansible_become_pass</td>
-        <td>password</td>
-        <td>The password for the ansible_user to use sudo. Generally, it is the same as ansible_ssh_pass.</td>
-    </tr>
-</table>
-
-#### Host Variable [master_node_configuring]
-
-This host is used to create and configure programs on top of Kubernetes hosts.
 
 <table>
     <tr>
@@ -265,33 +252,6 @@ These parameters are shared by all Glusterfs hosts.
 #### Host Variable [glusterfs_host]
 
 Each host has its own independent variables following the host ip. The hosts here have Glusterfs server side programs. 
-
-<table>
-    <tr>
-        <td>Variable Name</td>
-        <td>Example</td>
-        <td>Description</td>
-    </tr>
-    <tr>
-        <td>ansible_user</td>
-        <td>username</td>
-        <td>The username to login this host. The user must have the root privilege</td>
-    </tr>
-    <tr>
-        <td>ansible_ssh_pass</td>
-        <td>password</td>
-        <td>The password for the ansible_user.</td>
-    </tr>
-    <tr>
-        <td>ansible_become_pass</td>
-        <td>password</td>
-        <td>The password for the ansible_user to use sudo. Generally, it is the same as ansible_ssh_pass.</td>
-    </tr>
-</table>
-
-#### Host Variable [glusterfs_configuring]
-
-This host is used to create and configure volumes on top of Glusterfs hosts.
 
 <table>
     <tr>
